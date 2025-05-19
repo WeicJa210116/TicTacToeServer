@@ -1,0 +1,39 @@
+services:
+  app:
+    working_dir: /app
+    image: node:18-alpine
+    command: sh -c "yarn install && yarn run dev"
+    ports:
+      - "8080:80"
+    volumes:
+      - ./app/volumes:/app
+    depends_on:
+      - db
+    environment:
+      - MYSQL_HOST=db # service name
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=secret
+      - MYSQL_DB=db
+  db:
+    image: mysql:latest
+    environment:
+      - MYSQL_ROOT_PASSWORD=secret
+      - MYSQL_DATABASE=db
+      - MYSQL_USER=user
+    ports:
+      - "3306:3306"
+  api:
+    image: python:3.9-slim
+    working_dir: /app
+    command: bash -c "pip install -r requirements.txt && uvicorn main:app --host 0.0.0.0 --port 80 --reload"
+    ports:
+      - "80:80"
+    volumes:
+      - ./app/volumes/api:/app
+    depends_on:
+      - db
+    environment:
+      - MYSQL_HOST=db
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=secret
+      - MYSQL_DB=db

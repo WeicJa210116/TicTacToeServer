@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tic Tac Toe</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1 class="game-title">Tic Tac Toe</h1>
+        <div id="registration" class="game-section">
+            <h2>Player Registration</h2>
+            <div class="input-group">
+                <input type="text" id="playerName" placeholder="Enter your name">
+                <button class="btn primary" onclick="registerPlayer()">Register</button>
+            </div>
+        </div>
+
+        <div id="gameControls" class="game-section">
+            <div id="playerInfo" class="player-info"></div>
+            <div class="game-buttons">
+                <button class="btn primary" onclick="createGame()">Create New Game</button>
+                <div class="input-group">
+                    <input type="number" id="joinGameId" placeholder="Game ID">
+                    <button class="btn secondary" onclick="joinGame()">Join Game</button>
+                </div>
+            </div>
+            <div id="gameId" class="game-info"></div>
+            <div id="status" class="game-status"></div>
+            <div id="board" class="game-board"></div>
+        </div>
+
+        <div class="game-section">
+            <h2>Active Games</h2>
+            <div id="activeGames" class="games-list"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
