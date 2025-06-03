@@ -7,21 +7,11 @@ services:
       - "8080:80"
     volumes:
       - ./app/volumes:/app
-    depends_on:
-      - db
     environment:
       - MYSQL_HOST=db # service name
       - MYSQL_USER=root
       - MYSQL_PASSWORD=secret
       - MYSQL_DB=db
-  db:
-    image: mysql:latest
-    environment:
-      - MYSQL_ROOT_PASSWORD=secret
-      - MYSQL_DATABASE=db
-      - MYSQL_USER=user
-    ports:
-      - "3306:3306"
   api:
     image: python:3.9-slim
     working_dir: /app
@@ -30,8 +20,6 @@ services:
       - "80:80"
     volumes:
       - ./app/volumes/api:/app
-    depends_on:
-      - db
     environment:
       - MYSQL_HOST=db
       - MYSQL_USER=root

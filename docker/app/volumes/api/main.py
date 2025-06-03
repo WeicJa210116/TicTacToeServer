@@ -1,9 +1,16 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List
 from pydantic import BaseModel
 from random import randint
 from fastapi.responses import JSONResponse
+import logging
+from time import sleep
+
+# Add logging configuration
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
@@ -70,6 +77,11 @@ async def new_player(ip: str, name: str):
 @app.post("/newgameRequest")
 async def new_game_request(request: NewGameRequest):
     player_index = int(request.player1Id) - 1  # Convert string ID to index
+
+    # Add validation for player existence
+    if player_index < 0 or player_index >= len(players):
+        raise HTTPException(status_code=404, detail="Player not found")
+
     game_id = len(games) + 1
     new_game = game(
         id=game_id,
@@ -86,6 +98,8 @@ async def new_game_request(request: NewGameRequest):
 
 @app.post("/joinGameRequest")
 async def join_game_request(request: JoinGameRequest):
+    if len(games[request.game_id - 1].players) >= 2:
+        raise HTTPException(status_code=400, detail="Game already has two players")
     player_index = int(request.player2Id) - 1  # Convert string ID to index
     games[request.game_id - 1].players.append(players[player_index])
     if randint(0, 1) == 1:
@@ -95,14 +109,47 @@ async def join_game_request(request: JoinGameRequest):
 
 @app.post("/move")
 async def move(request: MoveRequest):
-    game = games[request.game_id - 1]
-    player_index = int(request.playerId) - 1  # Convert string ID to index
+    # Validate game exists
+    if request.game_id < 1 or request.game_id > len(games):
+        logger.error(f"Invalid game_id: {request.game_id}")
+        raise HTTPException(status_code=404, detail="Game not found")
 
+    game = games[request.game_id - 1]
+    player_index = int(request.playerId) - 1
+
+    # Add detailed logging
+    logger.info(
+        f"Move request - Game: {request.game_id}, Player: {request.playerId}, Position: ({request.x}, {request.y})"
+    )
+    logger.info(f"Current game state - Turn: {game.turn}, Players: {len(game.players)}")
+
+    # Validate player exists
+    if player_index < 0 or player_index >= len(players):
+        logger.error(f"Invalid player_index: {player_index}")
+        return JSONResponse(
+            status_code=400,
+            content={"content": f"Invalid player_index: {player_index}"},
+        )
+
+    # Validate number of players
+    if len(game.players) != 2:
+        logger.error(f"Not enough players: {len(game.players)}")
+        return JSONResponse(status_code=400, content={"content": "Player not found"})
+
+    # Validate move coordinates
+    if not (0 <= request.x < 3 and 0 <= request.y < 3):
+        logger.error(f"Invalid coordinates: ({request.x}, {request.y})")
+        raise HTTPException(status_code=400, detail="Invalid coordinates")
+
+    # Validate game state
     if game.game_over:
+        logger.error("Game is over")
         raise HTTPException(status_code=400, detail="Game is over")
     if game.current_player.id != players[player_index].id:
+        logger.error("Not your turn")
         raise HTTPException(status_code=400, detail="Not your turn")
     if game.board[request.x][request.y] != "":
+        logger.error("Invalid move")
         raise HTTPException(status_code=400, detail="Invalid move")
     if game.turn % 2 == 0:
         game.board[request.x][request.y] = "X"
@@ -129,10 +176,8 @@ async def move(request: MoveRequest):
         game.winnerSynbol = game.board[0][2]
         game.game_over = True
 
-    if game.game_over:
-        games.pop(request.game_id - 1)
-
     game.current_player = game.players[game.turn % 2]
+    delGame(game.id)
     return {"game": game, "winner": game.winnerSynbol}
 
 
@@ -152,5 +197,13 @@ async def get_games():
 async def delete_game(game_id: int):
     if game_id > len(games) or game_id < 1:
         raise HTTPException(status_code=404, detail="Game not found")
+    games.pop(game_id - 1)
+    return {"message": "Game deleted successfully"}
+
+
+async def delGame(game_id: int):
+    if game_id > len(games) or game_id < 1:
+        raise HTTPException(status_code=404, detail="Game not found")
+    print("(--------------------Deleting game --------------------)")
     games.pop(game_id - 1)
     return {"message": "Game deleted successfully"}

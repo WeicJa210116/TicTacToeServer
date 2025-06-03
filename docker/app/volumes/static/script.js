@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://192.168.178.34:80';
+const API_BASE_URL = 'http://192.168.112.211:80';
 
 let currentGame = null;
 let playerId = null;
@@ -123,9 +123,11 @@ async function makeMove(x, y) {
                 y: parseInt(y) 
             })
         });
-
+        
         if (!response.ok) {
-            throw new Error(`Move failed: ${response.status}`);
+            const data = await response.json();
+            console.error('Move error:', data);
+            throw new Error(`Move failed: ${data.content}`);
         }
 
         const data = await response.json();
@@ -134,6 +136,7 @@ async function makeMove(x, y) {
         if (data.winner) {
             alert(`Game Over! Winner: ${data.winner}`);
         }
+        
     } catch (error) {
         console.error('Move error:', error);
         alert('Invalid move: ' + error.message);
